@@ -4,8 +4,9 @@
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>
 #include <FastLED.h>
-#include <NTPClient.h>
-#include <WiFiUdp.h>
+#include <ESP8266HTTPUpdateServer.h>
+#include <ESP8266mDNS.h>
+#include <ArduinoOTA.h>
 #include <FS.h>
 
 #include "src/grid.h"
@@ -15,7 +16,8 @@
 #include "src/config.h"
 #include "src/dnd.h"
 #include "src/led.h"
-#include "src/time.h"
+#include "src/timeSync.h"
+#include "src/ota.h"
 #include "src/httpServer.h"
 #include "src/gui.h"
 #include "src/controller.h"
@@ -37,6 +39,7 @@ void setup() {
 
   Wifi::setup();
   HttpServer::setup();
+  Ota::setup();
   Led::setup();
   Time::setup();
 
@@ -51,4 +54,5 @@ void setup() {
 void loop() {
   Time::loop();
   HttpServer::loop();
+  Ota::loop();
 }

@@ -7,9 +7,9 @@
 #include "color.h"
 #include "gui.h"
 #include "wifi.h"
-#include "time.h"
+#include "timeSync.h"
+#include "ota.h"
 #include "led.h"
-#include "utcOffset.h"
 
 void Controller::index() {
   String content = Gui::index();
@@ -44,21 +44,41 @@ void Controller::saveTime() {
   DynamicJsonDocument doc(2048);
   deserializeJson(doc, json);
 
-  Config::automatic_timezone = doc["tz_auto"].as<int>() == 1;
+  String tz = doc["tz"].as<String>();
+  String ntp = doc["ntp"].as<String>();
+  tz.trim();
+  ntp.trim();
 
-  // store the last known value anyway.
-  Config::timezone = doc["tz"].as<int>();
-
-  if (Config::automatic_timezone) {
-    UtcOffset::updateLocalizedUtcOffset();
+  if (!Controller::isValidSetting(tz) || !Controller::isValidSetting(ntp)) {
+    HttpServer::web.send(400, "text/plain", "Ungueltige Zeitzone oder NTP-Server");
+    return;
   }
 
-  Config::ntp = doc["ntp"].as<String>();
+  Config::tz = tz;
+  Config::ntp = ntp;
 
   Config::save();
-  Grid::setTime(Time::hour, Time::minute);
+  Time::applyConfig();
+  Time::loop();
 
   HttpServer::web.send(200, "text/html", "");
+}
+
+// TZ rules and host names: printable ASCII, no quotes or backslashes, max. 63 chars.
+bool Controller::isValidSetting(const String& value) {
+  if (value.length() == 0 || value.length() > 63) {
+    return false;
+  }
+
+  for (unsigned int i = 0; i < value.length(); i++) {
+    char c = value.charAt(i);
+
+    if (c < 0x21 || c > 0x7e || c == '"' || c == '\\' || c == '\'') {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 void Controller::saveDnd() {
@@ -84,6 +104,14 @@ void Controller::deleteWiFi() {
   Wifi::reset();
   ESP.restart();
   HttpServer::web.send(200, "text/html", "");
+}
+
+void Controller::firmware() {
+  if (!Ota::authenticate()) {
+    return;
+  }
+
+  HttpServer::web.send(200, "text/html", Gui::firmware());
 }
 
 void Controller::getLogoSvg() {

@@ -3,9 +3,8 @@
 
 #include "config.h"
 #include "types.h"
-#include "time.h"
+#include "timeSync.h"
 #include "led.h"
-#include "utcOffset.h"
 
 void Config::save() {
   File file = SPIFFS.open("/wordclock_config.json", "w");
@@ -17,9 +16,6 @@ void Config::save() {
 
   Serial.println("Save config.");
 
-  Time::ntpClient.setPoolServerName(Config::ntp.c_str());
-  Time::ntpClient.setTimeOffset(Config::timezone);
-
   StaticJsonDocument<1024> doc;
   doc["color_bg_r"] = Config::color_bg.r;
   doc["color_bg_g"] = Config::color_bg.g;
@@ -29,8 +25,7 @@ void Config::save() {
   doc["color_fg_b"] = Config::color_fg.b;
   doc["power_supply"] = Config::power_supply;
   doc["brightness"] = Config::brightness;
-  doc["tz_auto"] = Config::automatic_timezone;
-  doc["timezone"] = Config::timezone;
+  doc["tz_posix"] = Config::tz;
   doc["dnd_active"] = Config::dnd_active;
   doc["dnd_start_hour"] = Config::dnd_start.hour;
   doc["dnd_start_minute"] = Config::dnd_start.minute;
@@ -56,8 +51,7 @@ void Config::load() {
   Config::power_supply = 500; // default: 500mA (USB 2.0 specification)
   Config::brightness = 0.5;
 
-  Config::automatic_timezone = true;
-  Config::timezone = 0;
+  Config::tz = TZ_DEFAULT;
 
   Config::dnd_active = false;
   Config::dnd_start.hour = -1;
@@ -98,15 +92,10 @@ void Config::load() {
       (doc["brightness"].as<double>() > Led::getMaxBrightnessPercnt()) ? Led::getMaxBrightnessPercnt() : doc["brightness"].as<double>();
   }
 
-  if (doc["tz_auto"]) {
-    Config::automatic_timezone = doc["tz_auto"].as<bool>();
-  }
-
-  // load the last known timezone in any case.
-  Config::timezone = doc["timezone"].as<int>();
-
-  if (Config::automatic_timezone) {
-    UtcOffset::updateLocalizedUtcOffset();
+  // Configs saved by older firmware versions only contain a fixed UTC offset
+  // ("timezone"); they keep TZ_DEFAULT until a rule is saved in the web interface.
+  if (doc["tz_posix"]) {
+    Config::tz = doc["tz_posix"].as<String>();
   }
 
   Config::dnd_active = doc["dnd_active"].as<bool>();
@@ -123,9 +112,6 @@ void Config::load() {
     Config::healthcheck = doc["healthcheck"].as<bool>();
   }
 
-  Time::ntpClient.setPoolServerName(Config::ntp.c_str());
-  Time::ntpClient.setTimeOffset(Config::timezone);
-
   file.close();
 }
 
@@ -133,8 +119,7 @@ color_t Config::color_bg{};
 color_t Config::color_fg{};
 int Config::power_supply{};
 double Config::brightness{};
-bool Config::automatic_timezone{};
-int Config::timezone{};
+String Config::tz{};
 bool Config::dnd_active{};
 clock_time_t Config::dnd_start{};
 clock_time_t Config::dnd_end{};

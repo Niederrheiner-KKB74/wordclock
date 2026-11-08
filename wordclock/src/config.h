@@ -78,6 +78,33 @@
   #define DATA_PIN D4
 #endif
 
+/* Default time zone (POSIX TZ rule), used until another one is saved in the web interface.
+ * Germany / Central Europe: "CET-1CEST,M3.5.0,M10.5.0/3"
+ */
+#ifndef TZ_DEFAULT
+  #define TZ_DEFAULT "CET-1CEST,M3.5.0,M10.5.0/3"
+#endif
+
+/* Firmware update over WiFi
+ *
+ * Web upload:      http://[YOUR_WORDCLOCK_IP]/firmware
+ * Arduino IDE:     network port "wordclock" (Tools > Port)
+ *
+ * If OTA_PASSWORD is empty, updates are possible without a password for
+ * everyone in your network. Set a password in user_config.h to protect them.
+ */
+#ifndef OTA_HOSTNAME
+  #define OTA_HOSTNAME "wordclock"
+#endif
+
+#ifndef OTA_USERNAME
+  #define OTA_USERNAME "admin"
+#endif
+
+#ifndef OTA_PASSWORD
+  #define OTA_PASSWORD ""
+#endif
+
 #ifndef CONSUMPTION_D1_MINI
   #define CONSUMPTION_D1_MINI 170 // 170mA in active mode
 #endif
@@ -85,6 +112,8 @@
 #ifndef CONSUMPTION_PER_LED
   #define CONSUMPTION_PER_LED 60 // 60mA per LED on full brightness in white.
 #endif
+
+#define FIRMWARE_VERSION "4.1.0"
 
 /***********************************************
  * CONFIG END
@@ -96,8 +125,7 @@ class Config {
     static color_t color_fg;
     static int power_supply;
     static double brightness;
-    static bool automatic_timezone;
-    static int timezone;
+    static String tz;
     static bool dnd_active;
     static clock_time_t dnd_start;
     static clock_time_t dnd_end;

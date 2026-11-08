@@ -14,6 +14,7 @@ void HttpServer::setup() {
 	HttpServer::web.on("/api/time", HTTP_PUT, Controller::saveTime);
 	HttpServer::web.on("/api/dnd", HTTP_PUT, Controller::saveDnd);
 	HttpServer::web.on("/api/wifi", HTTP_DELETE, Controller::deleteWiFi);
+	HttpServer::web.on("/firmware", HTTP_GET, Controller::firmware);
 
 	HttpServer::web.onNotFound(Controller::notFound);
     HttpServer::web.begin();

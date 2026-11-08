@@ -1,9 +1,26 @@
 #include <Arduino.h>
+#include <time.h>
 
 #include "gui.h"
 #include "color.h"
 #include "config.h"
 #include "led.h"
+#include "ota.h"
+#include "timeSync.h"
+
+// Common time zones as POSIX TZ rules (label, rule).
+static const char* const TZ_PRESETS[][2] = {
+  {"Deutschland, Österreich, Schweiz (MEZ/MESZ)", "CET-1CEST,M3.5.0,M10.5.0/3"},
+  {"Großbritannien, Irland, Portugal (WEZ/WESZ)", "GMT0BST,M3.5.0/1,M10.5.0"},
+  {"Finnland, Griechenland, Rumänien (OEZ/OESZ)", "EET-2EEST,M3.5.0/3,M10.5.0/4"},
+  {"Türkei (UTC+3)", "<+03>-3"},
+  {"Russland, Moskau (UTC+3)", "MSK-3"},
+  {"USA Ostküste (New York)", "EST5EDT,M3.2.0,M11.1.0"},
+  {"USA Central (Chicago)", "CST6CDT,M3.2.0,M11.1.0"},
+  {"USA Mountain (Denver)", "MST7MDT,M3.2.0,M11.1.0"},
+  {"USA Westküste (Los Angeles)", "PST8PDT,M3.2.0,M11.1.0"},
+  {"UTC", "UTC0"}
+};
 
 String Gui::pad(int value) {
   if(value < 10) {
@@ -24,104 +41,29 @@ String Gui::htmlOption(const String& label, const String& value, const String& s
   return content;
 }
 
-String Gui::getTimeForm() {
-  String content = "";
+String Gui::escape(const String& value) {
+  String out = value;
+  out.replace("&", "&amp;");
+  out.replace("<", "&lt;");
+  out.replace(">", "&gt;");
+  out.replace("\"", "&quot;");
 
-  content += "<div>";
-  content += "<label>Vordergrundfarbe</label>";
-  content += "<input name=\"fg\" value=\"#" + Color::rgbToHex(Config::color_fg) + "\" type=\"color\">";
-  content += "</div>";
-  content += "<div>";
-  content += "<label>Hintergrundfarbe</label>";
-  content += "<input name=\"bg\" value=\"#" + Color::rgbToHex(Config::color_bg) + "\" type=\"color\">";
-  content += "</div>";
-  content += "<div>";
-  content += "<label>Stromversorgung in mA</label>";
-  content += "<input id=\"power_supply\" type=\"number\" step=\"100\" value=\"" + String(Config::power_supply) + "\">";
-  content += "</div>";
-  content += "<div>";
-  content += "<label>Helligkeit</label>";
-  content += "<select name=\"brightness\">";
+  return out;
+}
 
-  for (double brightness_percnt = 0.0; brightness_percnt < Led::getMaxBrightnessPercnt(); brightness_percnt+=0.05) {
-    String label = String((int) (brightness_percnt * 100 + 0.5)) + "&percnt;"; // adding 0.5 for rounding.
-    content += Gui::htmlOption(label, String(brightness_percnt), String(Config::brightness));
-  }
-  if (Led::getMaxBrightnessPercnt() < 1.0) { // show maximum brightness percentage between the 5% steps.
-    String label = String((int) (Led::getMaxBrightnessPercnt() * 100 + 0.5)) + "&percnt;";
-    content += Gui::htmlOption(label, String(Led::getMaxBrightnessPercnt()), String(Config::brightness));
+String Gui::getTimeStatus() {
+  if (!Time::isSynced()) {
+    return "Noch keine Zeit vom NTP-Server empfangen.";
   }
 
-  content += "</select>";
-  content += "</div>";
-  content += "<div>";
-  content += "<label>Zeitzone</label>";
-  content += "<select name=\"tz\">";
+  time_t now = time(nullptr);
+  struct tm local;
+  localtime_r(&now, &local);
 
-  for(int i = -12; i < 13; i++) {
+  String status = "Uhrzeit der WordClock: " + Gui::pad(local.tm_hour) + ":" + Gui::pad(local.tm_min);
+  status += (local.tm_isdst > 0) ? " (Sommerzeit)" : " (Normalzeit)";
 
-    String label = String(i);
-
-    if(i > 0) {
-      label = "+" + label;
-    }
-
-    content += Gui::htmlOption(label, String(i), String(Config::timezone));
-  }
-
-  content += "</select>";
-  content += "</div>";
-
-  content += "<div>";
-  content += "<label>NTP-Server</label>";
-  content += "<input name=\"ntp\" type=\"text\" value=\"" + Config::ntp + "\">";
-  content += "</div>";
-
-  content += "<div>";
-  content += "<label>Nachtmodus</label>";
-  content += "<select name=\"dnd_active\">";
-  content += Gui::htmlOption("Inaktiv", String(0), String(Config::dnd_active));
-  content += Gui::htmlOption("Aktiv", String(1), String(Config::dnd_active));
-  content += "</select>";
-  content += "</div>";
-
-  content += "<div>";
-  content += "<label>Nachtmodus Startzeit</label>";
-  content += "<select class=\"time\" name=\"dnd_start_hour\">";
-
-  for(int i = 0; i < 24; i++) {
-    content += Gui::htmlOption(Gui::pad(i), String(i), String(Config::dnd_start.hour));
-  }
-
-  content += "</select>:";
-  content += "<select class=\"time\" name=\"dnd_start_minute\">";
-
-  for(int i = 0; i < 60; i = i + 5) {
-    content += Gui::htmlOption(Gui::pad(i), String(i), String(Config::dnd_start.minute));
-  }
-
-  content += "</select>";
-  content += "</div>";
-
-  content += "<div>";
-  content += "<label>Nachtmodus Endzeit</label>";
-  content += "<select class=\"time\" name=\"dnd_end_hour\">";
-
-  for(int i = 0; i < 24; i++) {
-    content += Gui::htmlOption(Gui::pad(i), String(i), String(Config::dnd_end.hour));
-  }
-
-  content += "</select>:";
-  content += "<select class=\"time\" name=\"dnd_end_minute\">";
-
-  for(int i = 0; i < 60; i = i + 5) {
-    content += Gui::htmlOption(Gui::pad(i), String(i), String(Config::dnd_end.minute));
-  }
-
-  content += "</select>";
-  content += "</div>";
-
-  return content;
+  return status;
 }
 
 String Gui::createStyleSheet() {
@@ -149,6 +91,8 @@ String Gui::createStyleSheet() {
   content += "section div div.time select { display: inline-block; flex: 1; }";
   content += "#reset_wifi { background-color: #3d72a8; border: 0; width: 100%; color: #eee; padding: 10px; cursor: pointer; }";
   content += "#reset_wifi_message { display: none; text-align: center;}";
+  content += "p.info { color: #333; font-size: 0.9em; margin: 0 0 20px 0; }";
+  content += "a.button { display: block; background-color: #3d72a8; color: #eee; padding: 10px; text-align: center; text-decoration: none; }";
   content += "footer { position: fixed; bottom: 0; left: 0; right: 0; background-color: #3d72a8; text-align: right; }";
   content += "footer button { background-color: #3d72a8; color: #eee; border: 0; padding: 15px; text-transform: uppercase; font-weight: bold; }";
   content += "footer button:hover,footer button:active { color: #ccc; cursor: pointer; }";
@@ -181,6 +125,11 @@ String Gui::createNav() {
   content += "<path fill=\"#eee\" d=\"M12,21L15.6,16.2C14.6,15.45 13.35,15 12,15C10.65,15 9.4,15.45 8.4,16.2L12,21M12,3C7.95,3 4.21,4.34 1.2,6.6L3,9C5.5,7.12 8.62,6 12,6C15.38,6 18.5,7.12 21,9L22.8,6.6C19.79,4.34 16.05,3 12,3M12,9C9.3,9 6.81,9.89 4.8,11.4L6.6,13.8C8.1,12.67 9.97,12 12,12C14.03,12 15.9,12.67 17.4,13.8L19.2,11.4C17.19,9.89 14.7,9 12,9Z\" />";
   content += "</svg>";
   content += "</li>";
+  content += "<li name=\"firmware\">";
+  content += "<svg style=\"width:24px;height:24px\" viewBox=\"0 0 24 24\">";
+  content += "<path fill=\"#eee\" d=\"M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z\" />";
+  content += "</svg>";
+  content += "</li>";
   content += "</nav>";
 
   return content;
@@ -189,7 +138,29 @@ String Gui::createNav() {
 String Gui::createScript() {
   String content = "";
 
-  content += "window.onload=function(){var e=function(e){return document.getElementById(e)},n=document.querySelector('nav'),t=n.querySelectorAll('li'),d=document.querySelectorAll('main section'),i=e('save'),a=e('reset_wifi'),o=e('reset_wifi_message'),c='color',l={fg:e('fg'),bg:e('bg'),power_supply:e('power_supply'),brightness:e('brightness'),healthcheck:e('healthcheck'),tzAuto:e('tz_auto'),tz:e('tz'),ntp:e('ntp'),dndActive:e('dnd_active'),dndSH:e('dnd_s_h'),dndSM:e('dnd_s_m'),dndEH:e('dnd_e_h'),dndEM:e('dnd_e_m')};t.forEach((function(n){n.onclick=function(n){if('li'==n.currentTarget.tagName.toLowerCase()&&n.currentTarget.hasAttribute('name')){c=n.currentTarget.getAttribute('name');for(var a=0;a<t.length;a++)t[a].classList.remove('active');for(n.currentTarget.classList.add('active'),a=0;a<d.length;a++)d[a].classList.remove('active');i.style.display='wifi'==c?'none':'inline-block',e(c).classList.add('active')}}})),i.onclick=function(e){var n={},t='/api/'+c;if('color'==c)n.fg=l.fg.value,n.bg=l.bg.value,n.power_supply=l.power_supply.value,n.brightness=l.brightness.value,n.healthcheck=l.healthcheck.value;else if('time'==c)n.tz_auto=l.tzAuto.value,n.tz=l.tz.value,n.ntp=l.ntp.value;else{if('dnd'!=c)return;n.dnd_active=l.dndActive.value,n.dnd_start_hour=l.dndSH.value,n.dnd_start_minute=l.dndSM.value,n.dnd_end_hour=l.dndEH.value,n.dnd_end_minute=l.dndEM.value}fetch(t,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(n)}).then((function(e){}))},a.onclick=function(e){fetch('/api/wifi',{method:'DELETE',headers:{'Content-Type':'application/json'},body:''}).then((function(e){})),n.classList.add('disabled'),a.style.display='none',o.style.display='block'}};";
+  content += "window.onload=function(){";
+  content += "var e=function(id){return document.getElementById(id)};";
+  content += "var nav=document.querySelector('nav'),tabs=nav.querySelectorAll('li'),sections=document.querySelectorAll('main section');";
+  content += "var save=e('save'),resetWifi=e('reset_wifi'),resetMsg=e('reset_wifi_message'),current='color';";
+  content += "tabs.forEach(function(tab){tab.onclick=function(ev){var t=ev.currentTarget;if(!t.hasAttribute('name'))return;";
+  content += "current=t.getAttribute('name');";
+  content += "tabs.forEach(function(x){x.classList.remove('active')});t.classList.add('active');";
+  content += "sections.forEach(function(x){x.classList.remove('active')});e(current).classList.add('active');";
+  content += "save.style.display=(current=='wifi'||current=='firmware')?'none':'inline-block';}});";
+  content += "var preset=e('tz_preset'),tz=e('tz');";
+  content += "preset.onchange=function(){if(preset.value!='custom')tz.value=preset.value;};";
+  content += "tz.oninput=function(){preset.value='custom';for(var i=0;i<preset.options.length;i++){if(preset.options[i].value==tz.value)preset.value=tz.value;}};";
+  content += "save.onclick=function(){var d={};";
+  content += "if(current=='color'){d.fg=e('fg').value;d.bg=e('bg').value;d.power_supply=e('power_supply').value;d.brightness=e('brightness').value;d.healthcheck=e('healthcheck').value;}";
+  content += "else if(current=='time'){d.tz=tz.value;d.ntp=e('ntp').value;}";
+  content += "else if(current=='dnd'){d.dnd_active=e('dnd_active').value;d.dnd_start_hour=e('dnd_s_h').value;d.dnd_start_minute=e('dnd_s_m').value;d.dnd_end_hour=e('dnd_e_h').value;d.dnd_end_minute=e('dnd_e_m').value;}";
+  content += "else return;";
+  content += "fetch('/api/'+current,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)})";
+  content += ".then(function(r){if(!r.ok)return r.text().then(function(t){alert('Nicht gespeichert: '+t)});if(current=='time')location.reload();})";
+  content += ".catch(function(){alert('Die WordClock ist nicht erreichbar.')});};";
+  content += "resetWifi.onclick=function(){fetch('/api/wifi',{method:'DELETE',headers:{'Content-Type':'application/json'},body:''});";
+  content += "nav.classList.add('disabled');resetWifi.style.display='none';resetMsg.style.display='block';};";
+  content += "};";
 
   return content;
 }
@@ -226,29 +197,21 @@ String Gui::createContent() {
   content += "</section>";
 
   content += "<section id=\"time\">";
-  content += "<div><label>Automatische Zeitzone</label><select id=\"tz_auto\">";
-  content += Gui::htmlOption("Inaktiv", String(0), String(Config::automatic_timezone));
-  content += Gui::htmlOption("Aktiv", String(1), String(Config::automatic_timezone));
-  content += "</select></div>";
-  content += "<div><label>Zeitzone</label>";
-  if (Config::automatic_timezone) {
-    content += "<select id=\"tz\" disabled>";
-  } else {
-    content += "<select id=\"tz\">";
+  content += "<p class=\"info\">" + Gui::getTimeStatus() + "</p>";
+  content += "<div><label>Zeitzone</label><select id=\"tz_preset\">";
+
+  bool isPreset = false;
+  for (unsigned int i = 0; i < sizeof(TZ_PRESETS) / sizeof(TZ_PRESETS[0]); i++) {
+    String rule = TZ_PRESETS[i][1];
+    isPreset = isPreset || (rule == Config::tz);
+    content += Gui::htmlOption(TZ_PRESETS[i][0], Gui::escape(rule), Gui::escape(Config::tz));
   }
 
-  for(int i = -12; i < 13; i++) {
-    String label = String(i);
-
-    if(i > 0) {
-      label = "+" + label;
-    }
-
-    content += Gui::htmlOption(label, String(i * 3600), String(Config::timezone));
-  }
-
+  content += "<option value=\"custom\"" + String(isPreset ? "" : " selected=\"selected\"") + ">Eigene Regel</option>";
   content += "</select></div>";
-  content += "<div><label>NTP-Server</label><input id=\"ntp\" type=\"text\" value=\"" + Config::ntp + "\"></div>";
+  content += "<div><label>Zeitzonenregel (POSIX-Format, Sommer-/Winterzeit wird automatisch umgestellt)</label>";
+  content += "<input id=\"tz\" type=\"text\" maxlength=\"63\" value=\"" + Gui::escape(Config::tz) + "\"></div>";
+  content += "<div><label>NTP-Server</label><input id=\"ntp\" type=\"text\" maxlength=\"63\" value=\"" + Gui::escape(Config::ntp) + "\"></div>";
   content += "</section>";
 
   content += "<section id=\"dnd\">";
@@ -288,6 +251,12 @@ String Gui::createContent() {
   content += "<section id=\"wifi\">";
   content += "<button id=\"reset_wifi\" type=\"submit\">WiFi Einstellungen zurücksetzen</button>";
   content += "<div id=\"reset_wifi_message\">Die WiFi Einstellungen wurden zurückgesetzt. Es besteht keine Verbindung mehr zu der WordClock. Um die WordClock weiterhin zu verwenden muss das WiFi erneut eingerichtet werden.</div>";
+  content += "</section>";
+
+  content += "<section id=\"firmware\">";
+  content += "<p class=\"info\">Installierte Version: " + String(FIRMWARE_VERSION) + " (erstellt " + String(__DATE__) + ")</p>";
+  content += "<p class=\"info\">Platz für neue Firmware: " + String(ESP.getFreeSketchSpace() / 1024) + " KB</p>";
+  content += "<a class=\"button\" href=\"/firmware\">Neue Firmware installieren</a>";
   content += "</section>";
   content += "</main>";
 
@@ -329,6 +298,37 @@ String Gui::index() {
   content += Gui::createContent();
   content += Gui::createFooter();
   content += "</div>";
+  content += "</body></html>";
+
+  return content;
+}
+
+String Gui::firmware() {
+  String content = "";
+
+  content += "<!DOCTYPE html><html><head>";
+  content += "<meta charset=\"utf-8\">";
+  content += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">";
+  content += "<title>WordClock Firmware</title>";
+  content += "<style>";
+  content += "body { font-family: Arial, \"Helvetica Neue\", Helvetica, sans-serif; background-color: #eee; color: #333; max-width: 600px; margin: 0 auto; padding: 16px; }";
+  content += "h1 { color: #3d72a8; font-size: 1.4em; }";
+  content += "input[type=file] { display: block; width: 100%; margin: 20px 0; }";
+  content += "button, a { display: block; box-sizing: border-box; width: 100%; background-color: #3d72a8; color: #eee; border: 0; padding: 10px; text-align: center; text-decoration: none; font-size: 1em; cursor: pointer; margin-bottom: 10px; }";
+  content += "button:disabled { background-color: #999; cursor: wait; }";
+  content += "#busy { display: none; font-weight: bold; }";
+  content += "</style>";
+  content += "</head><body>";
+  content += "<h1>Firmware-Update</h1>";
+  content += "<p>Installierte Version: " + String(FIRMWARE_VERSION) + " (erstellt " + String(__DATE__) + ")</p>";
+  content += "<p>Wähle die Datei <b>wordclock.ino.bin</b> aus (Arduino IDE: <i>Sketch &gt; Kompilierte Binärdatei exportieren</i>). ";
+  content += "Die Einstellungen der Uhr bleiben erhalten.</p>";
+  content += "<form method=\"POST\" action=\"/update\" enctype=\"multipart/form-data\" onsubmit=\"var b=document.getElementById('upload');b.disabled=true;b.textContent='Wird hochgeladen …';document.getElementById('busy').style.display='block';\">";
+  content += "<input type=\"file\" name=\"firmware\" accept=\".bin,.bin.gz\" required>";
+  content += "<button id=\"upload\" type=\"submit\">Firmware hochladen und installieren</button>";
+  content += "</form>";
+  content += "<p id=\"busy\">Bitte warten und die Uhr nicht vom Strom trennen. Nach dem Hochladen startet sie neu; das dauert etwa eine Minute.</p>";
+  content += "<a href=\"/\">Zurück</a>";
   content += "</body></html>";
 
   return content;
