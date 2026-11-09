@@ -9,6 +9,7 @@
 #include "occasions.h"
 
 static const uint16_t FRAME_MS = 30;            // about 33 frames per second for animations
+static const uint16_t REFRESH_MS = 1000;        // resend static content every second
 static const uint32_t SYMBOL_MS = 7000;         // how long a picture is shown
 static const uint16_t TEXT_MAX_COLUMNS = 600;   // about 100 characters
 static const uint16_t TEXT_STEP_MS[] = {0, 170, 115, 75};  // per text speed 1-3
@@ -327,7 +328,12 @@ void Display::loop() {
 
   bool animated = (content != CONTENT_TIME) || (!timeDark && Config::color_mode != COLOR_MODE_STATIC);
 
-  if (!dirty && !(animated && now - lastFrame >= FRAME_MS)) {
+  // Static content is resent every second as well: a transmission error
+  // (typically on the first LED of the chain) would otherwise stay visible
+  // until the next minute.
+  bool due = now - lastFrame >= (animated ? FRAME_MS : REFRESH_MS);
+
+  if (!dirty && !due) {
     return;
   }
 
