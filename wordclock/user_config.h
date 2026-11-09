@@ -49,3 +49,15 @@
 /* Data PIN, where the LED strip is connected to */
 #define DATA_PIN D4
 #define FASTLED_INTERNAL
+
+/* Password for firmware updates over WiFi (web interface and Arduino IDE)
+ *
+ * Without a password, everyone in your network can install a new firmware.
+ * Username for the web upload is "admin".
+ */
+// #define OTA_PASSWORD "my-secret-password"
+
+/* Interrupts while the LEDs are updated (0 = no, 1 = yes)
+ * Not set: FastLED default. Only change this if LEDs flicker or WiFi is unreliable.
+ */
+// #define FASTLED_ALLOW_INTERRUPTS 0

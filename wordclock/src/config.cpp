@@ -3,9 +3,8 @@
 
 #include "config.h"
 #include "types.h"
-#include "time.h"
+#include "timeSync.h"
 #include "led.h"
-#include "utcOffset.h"
 
 void Config::save() {
   File file = SPIFFS.open("/wordclock_config.json", "w");
@@ -17,10 +16,7 @@ void Config::save() {
 
   Serial.println("Save config.");
 
-  Time::ntpClient.setPoolServerName(Config::ntp.c_str());
-  Time::ntpClient.setTimeOffset(Config::timezone);
-
-  StaticJsonDocument<1024> doc;
+  DynamicJsonDocument doc(4096);
   doc["color_bg_r"] = Config::color_bg.r;
   doc["color_bg_g"] = Config::color_bg.g;
   doc["color_bg_b"] = Config::color_bg.b;
@@ -29,8 +25,7 @@ void Config::save() {
   doc["color_fg_b"] = Config::color_fg.b;
   doc["power_supply"] = Config::power_supply;
   doc["brightness"] = Config::brightness;
-  doc["tz_auto"] = Config::automatic_timezone;
-  doc["timezone"] = Config::timezone;
+  doc["tz_posix"] = Config::tz;
   doc["dnd_active"] = Config::dnd_active;
   doc["dnd_start_hour"] = Config::dnd_start.hour;
   doc["dnd_start_minute"] = Config::dnd_start.minute;
@@ -38,6 +33,23 @@ void Config::save() {
   doc["dnd_end_minute"] = Config::dnd_end.minute;
   doc["ntp"] = Config::ntp;
   doc["healthcheck"] = Config::healthcheck;
+  doc["color_mode"] = Config::color_mode;
+  doc["color_fg2_r"] = Config::color_fg2.r;
+  doc["color_fg2_g"] = Config::color_fg2.g;
+  doc["color_fg2_b"] = Config::color_fg2.b;
+  doc["effect_speed"] = Config::effect_speed;
+  doc["text_speed"] = Config::text_speed;
+  doc["xmas"] = Config::xmas;
+  doc["occasion_interval"] = Config::occasion_interval;
+
+  JsonArray occasions = doc.createNestedArray("occasions");
+  for (int i = 0; i < MAX_OCCASIONS; i++) {
+    JsonObject o = occasions.createNestedObject();
+    o["d"] = Config::occasions[i].day;
+    o["m"] = Config::occasions[i].month;
+    o["s"] = Config::occasions[i].symbol;
+    o["t"] = Config::occasions[i].text;
+  }
 
   serializeJson(doc, file);
 
@@ -56,8 +68,7 @@ void Config::load() {
   Config::power_supply = 500; // default: 500mA (USB 2.0 specification)
   Config::brightness = 0.5;
 
-  Config::automatic_timezone = true;
-  Config::timezone = 0;
+  Config::tz = TZ_DEFAULT;
 
   Config::dnd_active = false;
   Config::dnd_start.hour = -1;
@@ -67,6 +78,22 @@ void Config::load() {
   Config::ntp = "pool.ntp.org";
 
   Config::healthcheck = false;
+
+  Config::color_mode = COLOR_MODE_STATIC;
+  Config::color_fg2.r = 0;
+  Config::color_fg2.g = 80;
+  Config::color_fg2.b = 255;
+  Config::effect_speed = 3;
+  Config::text_speed = 2;
+  Config::xmas = true;
+  Config::occasion_interval = 60;
+
+  for (int i = 0; i < MAX_OCCASIONS; i++) {
+    Config::occasions[i].day = 0;
+    Config::occasions[i].month = 0;
+    Config::occasions[i].symbol = 0;
+    Config::occasions[i].text = "";
+  }
 
   File file = SPIFFS.open("/wordclock_config.json", "r");
 
@@ -78,7 +105,7 @@ void Config::load() {
 
   Serial.println("Load config.");
 
-  StaticJsonDocument<1024> doc;
+  DynamicJsonDocument doc(4096);
   deserializeJson(doc, file);
 
   Config::color_bg.r = doc["color_bg_r"].as<int>();
@@ -98,15 +125,10 @@ void Config::load() {
       (doc["brightness"].as<double>() > Led::getMaxBrightnessPercnt()) ? Led::getMaxBrightnessPercnt() : doc["brightness"].as<double>();
   }
 
-  if (doc["tz_auto"]) {
-    Config::automatic_timezone = doc["tz_auto"].as<bool>();
-  }
-
-  // load the last known timezone in any case.
-  Config::timezone = doc["timezone"].as<int>();
-
-  if (Config::automatic_timezone) {
-    UtcOffset::updateLocalizedUtcOffset();
+  // Configs saved by older firmware versions only contain a fixed UTC offset
+  // ("timezone"); they keep TZ_DEFAULT until a rule is saved in the web interface.
+  if (doc["tz_posix"]) {
+    Config::tz = doc["tz_posix"].as<String>();
   }
 
   Config::dnd_active = doc["dnd_active"].as<bool>();
@@ -123,8 +145,31 @@ void Config::load() {
     Config::healthcheck = doc["healthcheck"].as<bool>();
   }
 
-  Time::ntpClient.setPoolServerName(Config::ntp.c_str());
-  Time::ntpClient.setTimeOffset(Config::timezone);
+  // Settings added in 4.2.0 - older configs keep the defaults above.
+  if (doc.containsKey("color_mode")) {
+    Config::color_mode = constrain(doc["color_mode"].as<int>(), 0, COLOR_MODE_COUNT - 1);
+    Config::color_fg2.r = doc["color_fg2_r"].as<int>();
+    Config::color_fg2.g = doc["color_fg2_g"].as<int>();
+    Config::color_fg2.b = doc["color_fg2_b"].as<int>();
+    Config::effect_speed = constrain(doc["effect_speed"].as<int>(), 1, 10);
+  }
+
+  if (doc.containsKey("text_speed")) {
+    Config::text_speed = constrain(doc["text_speed"].as<int>(), 1, 3);
+  }
+
+  if (doc.containsKey("xmas")) {
+    Config::xmas = doc["xmas"].as<bool>();
+    Config::occasion_interval = constrain(doc["occasion_interval"].as<int>(), 10, 3600);
+  }
+
+  JsonArray occasions = doc["occasions"];
+  for (int i = 0; i < MAX_OCCASIONS && i < (int) occasions.size(); i++) {
+    Config::occasions[i].day = occasions[i]["d"].as<int>();
+    Config::occasions[i].month = occasions[i]["m"].as<int>();
+    Config::occasions[i].symbol = occasions[i]["s"].as<int>();
+    Config::occasions[i].text = String(occasions[i]["t"] | "");
+  }
 
   file.close();
 }
@@ -133,10 +178,16 @@ color_t Config::color_bg{};
 color_t Config::color_fg{};
 int Config::power_supply{};
 double Config::brightness{};
-bool Config::automatic_timezone{};
-int Config::timezone{};
+String Config::tz{};
 bool Config::dnd_active{};
 clock_time_t Config::dnd_start{};
 clock_time_t Config::dnd_end{};
 String Config::ntp{};
 bool Config::healthcheck{};
+int Config::color_mode{};
+color_t Config::color_fg2{};
+int Config::effect_speed{};
+int Config::text_speed{};
+bool Config::xmas{};
+int Config::occasion_interval{};
+occasion_t Config::occasions[MAX_OCCASIONS];

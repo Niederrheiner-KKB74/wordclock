@@ -78,6 +78,33 @@
   #define DATA_PIN D4
 #endif
 
+/* Default time zone (POSIX TZ rule), used until another one is saved in the web interface.
+ * Germany / Central Europe: "CET-1CEST,M3.5.0,M10.5.0/3"
+ */
+#ifndef TZ_DEFAULT
+  #define TZ_DEFAULT "CET-1CEST,M3.5.0,M10.5.0/3"
+#endif
+
+/* Firmware update over WiFi
+ *
+ * Web upload:      http://[YOUR_WORDCLOCK_IP]/firmware
+ * Arduino IDE:     network port "wordclock" (Tools > Port)
+ *
+ * If OTA_PASSWORD is empty, updates are possible without a password for
+ * everyone in your network. Set a password in user_config.h to protect them.
+ */
+#ifndef OTA_HOSTNAME
+  #define OTA_HOSTNAME "wordclock"
+#endif
+
+#ifndef OTA_USERNAME
+  #define OTA_USERNAME "admin"
+#endif
+
+#ifndef OTA_PASSWORD
+  #define OTA_PASSWORD ""
+#endif
+
 #ifndef CONSUMPTION_D1_MINI
   #define CONSUMPTION_D1_MINI 170 // 170mA in active mode
 #endif
@@ -86,9 +113,35 @@
   #define CONSUMPTION_PER_LED 60 // 60mA per LED on full brightness in white.
 #endif
 
+/* Number of special occasions (birthdays etc.) that can be set in the web interface */
+#ifndef MAX_OCCASIONS
+  #define MAX_OCCASIONS 6
+#endif
+
+/* Maximum length of scrolling texts in bytes (umlauts count twice) */
+#define TEXT_MAX_LENGTH 100
+
+#define FIRMWARE_VERSION "4.2.3"
+
 /***********************************************
  * CONFIG END
  **********************************************/
+
+enum ColorMode {
+  COLOR_MODE_STATIC = 0,    // one color (foreground color)
+  COLOR_MODE_CYCLE = 1,     // whole clock slowly cycles through the spectrum
+  COLOR_MODE_RAINBOW = 2,   // rainbow running diagonally over the letters
+  COLOR_MODE_GRADIENT = 3,  // gradient from foreground color (top) to second color (bottom)
+  COLOR_MODE_WAVE = 4,      // waves of foreground and second color moving over the letters
+  COLOR_MODE_COUNT = 5
+};
+
+typedef struct {
+  uint8_t day;     // 1-31, 0 = entry not used
+  uint8_t month;   // 1-12
+  uint8_t symbol;  // see SymbolId in symbols.h
+  String text;     // optional scrolling text
+} occasion_t;
 
 class Config {
   public:
@@ -96,13 +149,22 @@ class Config {
     static color_t color_fg;
     static int power_supply;
     static double brightness;
-    static bool automatic_timezone;
-    static int timezone;
+    static String tz;
     static bool dnd_active;
     static clock_time_t dnd_start;
     static clock_time_t dnd_end;
     static String ntp;
     static bool healthcheck;
+
+    static int color_mode;
+    static color_t color_fg2;
+    static int effect_speed;       // 1 (slow) - 10 (fast)
+
+    static int text_speed;         // 1 (slow) - 3 (fast)
+
+    static bool xmas;              // Christmas tree from 1st Advent to 26.12.
+    static int occasion_interval;  // seconds of time display between pictures
+    static occasion_t occasions[MAX_OCCASIONS];
 
     static void save();
     static void load();

@@ -14,6 +14,11 @@ void HttpServer::setup() {
 	HttpServer::web.on("/api/time", HTTP_PUT, Controller::saveTime);
 	HttpServer::web.on("/api/dnd", HTTP_PUT, Controller::saveDnd);
 	HttpServer::web.on("/api/wifi", HTTP_DELETE, Controller::deleteWiFi);
+	HttpServer::web.on("/api/occasions", HTTP_PUT, Controller::saveOccasions);
+	HttpServer::web.on("/api/text", HTTP_PUT, Controller::showText);
+	HttpServer::web.on("/api/text", HTTP_DELETE, Controller::stopText);
+	HttpServer::web.on("/api/preview", HTTP_PUT, Controller::preview);
+	HttpServer::web.on("/firmware", HTTP_GET, Controller::firmware);
 
 	HttpServer::web.onNotFound(Controller::notFound);
     HttpServer::web.begin();
