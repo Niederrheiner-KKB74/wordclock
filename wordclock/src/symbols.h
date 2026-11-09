@@ -5,7 +5,7 @@
 #include "fastled.h"
 
 /*
- * Small pictures for special occasions, 11 x 10 pixels.
+ * Small pictures for special occasions, 11 x 11 pixels.
  *
  * Each picture is drawn with letters (see PALETTE in symbols.cpp); some
  * pixels are animated: candle flames flicker, the balls on the tree twinkle
@@ -22,7 +22,7 @@ enum SymbolId : uint8_t {
 class Symbols {
   public:
     static const uint8_t WIDTH = 11;
-    static const uint8_t HEIGHT = 10;
+    static const uint8_t HEIGHT = 11;
 
     static const char* name(uint8_t id);
 

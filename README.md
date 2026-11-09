@@ -1,5 +1,5 @@
 # WordClock
-[![Version](https://img.shields.io/badge/version-4.2.3-green.svg?style=for-the-badge)](#) [![mantained](https://img.shields.io/maintenance/yes/2020.svg?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-4.3.0-green.svg?style=for-the-badge)](#) [![mantained](https://img.shields.io/maintenance/yes/2020.svg?style=for-the-badge)](#)
 
 [![maintainer](https://img.shields.io/badge/maintainer-Goran%20Zunic%20%40panbachi-blue.svg?style=for-the-badge)](https://www.panbachi.de)
 
@@ -60,7 +60,7 @@ Choose a color mode, the foreground and background color and the brightness.
 The speed (1-10) sets how long one color cycle takes: from 10 minutes (1) to 6 seconds (10). The scrolling text uses the same color mode.
 
 ## Special occasions
-On up to six dates per year (birthdays, anniversaries, ...) the clock shows a picture (birthday cake, Christmas tree or heart) alternating with the time, followed by an optional scrolling text such as "Alles Gute, Anna!". The candles flicker, the balls on the tree twinkle and the heart beats.
+Pictures are drawn for clocks with 11 rows; on clocks with 10 rows the bottom row of the picture is left out. On up to six dates per year (birthdays, anniversaries, ...) the clock shows a picture (birthday cake, Christmas tree or heart) alternating with the time, followed by an optional scrolling text such as "Alles Gute, Anna!". The candles flicker, the balls on the tree twinkle and the heart beats.
 
 The Christmas tree is shown automatically from the 1st Advent to December 26th, with "Frohe Weihnachten" from December 24th (can be switched off). A birthday on the same day takes priority. Use *Vorschau* to see a picture right away. Occasions are not shown during the night mode (DND).
 
@@ -89,7 +89,13 @@ The first installation has to be done via USB. After that, new firmware can be i
 Settings are kept as long as you compile with the same *Flash Size* option (e.g. *4MB (FS:2MB OTA:~1019KB)* for the Wemos D1 mini). Set `OTA_PASSWORD` in `user_config.h` to protect updates; the web upload then asks for user `admin` and this password. If mDNS works in your network, the clock is also reachable as `http://wordclock.local`.
 
 ## Set DND
-You can set a time span in which the clock should be switched off.
+Set a night time and choose what the clock does at night:
+
+* **Uhr ausschalten:** all LEDs off (as before)
+* **Uhr dimmen:** the time stays visible with the night brightness (1-30 %), colors and color mode as by day
+* **Uhr dimmen mit Nachtfarbe:** the time is shown dimmed in one night color without animation (warm colors such as red or orange are the least glaring)
+
+The night brightness is never higher than the day brightness. Pictures for special occasions are not shown at night; a scrolling text started in the web interface is.
 
 ## PWA
 You can use the webbrowser function "Add to start screen" to install the webinterface as an app to your android (and possibly ios) smartphone.

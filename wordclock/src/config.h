@@ -121,7 +121,7 @@
 /* Maximum length of scrolling texts in bytes (umlauts count twice) */
 #define TEXT_MAX_LENGTH 100
 
-#define FIRMWARE_VERSION "4.2.3"
+#define FIRMWARE_VERSION "4.3.0"
 
 /***********************************************
  * CONFIG END
@@ -134,6 +134,13 @@ enum ColorMode {
   COLOR_MODE_GRADIENT = 3,  // gradient from foreground color (top) to second color (bottom)
   COLOR_MODE_WAVE = 4,      // waves of foreground and second color moving over the letters
   COLOR_MODE_COUNT = 5
+};
+
+enum DndMode {
+  DND_MODE_OFF = 0,          // switch the clock off
+  DND_MODE_DIM = 1,          // dim, keep the colors / color mode
+  DND_MODE_DIM_COLOR = 2,    // dim and show the time in the night color (no animation)
+  DND_MODE_COUNT = 3
 };
 
 typedef struct {
@@ -153,6 +160,9 @@ class Config {
     static bool dnd_active;
     static clock_time_t dnd_start;
     static clock_time_t dnd_end;
+    static int dnd_mode;
+    static double dnd_brightness;  // 0.01 - 1.0, used by the dim modes
+    static color_t dnd_color;
     static String ntp;
     static bool healthcheck;
 

@@ -28,3 +28,11 @@ bool DND::active(int hour, int minute) {
   
   return false;  
 }
+
+bool DND::dark(int hour, int minute) {
+  return Config::dnd_mode == DND_MODE_OFF && DND::active(hour, minute);
+}
+
+bool DND::dimmed(int hour, int minute) {
+  return Config::dnd_mode != DND_MODE_OFF && DND::active(hour, minute);
+}

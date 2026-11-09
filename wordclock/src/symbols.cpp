@@ -9,15 +9,19 @@
  * .  off
  * g  green          b  brown          w  white
  * p  pink           o  sponge         r  red
+ * c  blue (present)
  * y  candle flame (flickers)
  * Y  star / yellow ball (twinkles)
  * R  red ball (twinkles)
  * B  blue ball (twinkles)
  */
 
+// Drawn for 11 rows. Clocks with 10 rows show the top 10 rows (the plate,
+// the presents' lower half and an empty row are left out).
 static const char CAKE[] PROGMEM =
   "..y..y..y.."
   "..y..y..y.."
+  "..w..w..w.."
   "..w..w..w.."
   ".ppppppppp."
   ".popppoppo."
@@ -37,13 +41,15 @@ static const char TREE[] PROGMEM =
   "..gRgggBg.."
   ".gggYgggRg."
   "gBgggRgggYg"
-  "....bbb....";
+  ".rr.bbb.cc."
+  ".rr.bbb.cc.";
 
 static const char HEART[] PROGMEM =
   "..........."
-  "..rr...rr.."
-  ".rprr.rrrr."
-  ".rrrrrrrrr."
+  ".rrr...rrr."
+  "rprrr.rrrrr"
+  "rrrrrrrrrrr"
+  "rrrrrrrrrrr"
   ".rrrrrrrrr."
   "..rrrrrrr.."
   "...rrrrr..."
@@ -116,6 +122,7 @@ bool Symbols::pixel(uint8_t id, uint8_t x, uint8_t y, uint32_t ms, CRGB& color) 
     case 'p': color = CRGB(255, 70, 140); break;
     case 'o': color = CRGB(220, 130, 30); break;
     case 'r': color = CRGB(230, 0, 10); break;
+    case 'c': color = CRGB(0, 60, 230); break;
     case 'y': {
       uint8_t v = flicker(x, ms);
       color = CRGB(255, 90 + v / 3, 0);

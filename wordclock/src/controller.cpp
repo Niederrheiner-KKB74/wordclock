@@ -101,6 +101,12 @@ void Controller::saveDnd() {
   Config::dnd_end.hour = doc["dnd_end_hour"].as<int>();
   Config::dnd_end.minute = doc["dnd_end_minute"].as<int>();
 
+  if (doc.containsKey("dnd_mode")) {
+    Config::dnd_mode = constrain(doc["dnd_mode"].as<int>(), 0, DND_MODE_COUNT - 1);
+    Config::dnd_brightness = constrain(doc["dnd_brightness"].as<double>(), 0.01, Led::getMaxBrightnessPercnt());
+    Config::dnd_color = Color::hexToRgb(doc["dnd_color"].as<String>());
+  }
+
   Config::save();
   Grid::setTime(Time::hour, Time::minute);
 
