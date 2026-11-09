@@ -7,6 +7,8 @@
 #include "font.h"
 #include "symbols.h"
 #include "occasions.h"
+#include "dnd.h"
+#include "timeSync.h"
 
 // About 20 frames per second for animations. Interrupts are off while the
 // LEDs are updated (~4 ms for 125 LEDs), so this leaves enough time for WiFi.
@@ -24,7 +26,8 @@ enum Content : uint8_t {
 
 // Time: which LEDs belong to the current time, and night mode.
 static bool timeMask[NUM_LEDS];
-static bool timeDark = false;
+static bool timeDark = false;   // night mode "switch off"
+static bool nightDim = false;   // night mode "dim"
 
 // Grid position of every LED (for color modes); extra LEDs get positions below the grid.
 static int8_t ledX[NUM_LEDS];
@@ -152,7 +155,7 @@ static void afterText() {
 }
 
 static void scheduleOccasions(uint32_t now) {
-  if (manualText || sequenceActive || timeDark || now - lastOccasionCheck < 1000) {
+  if (manualText || sequenceActive || timeDark || nightDim || now - lastOccasionCheck < 1000) {
     return;
   }
 
@@ -212,7 +215,8 @@ static void render(uint32_t now) {
     }
   } else if (content == CONTENT_SYMBOL) {
     int xOff = (GRID_COLS - Symbols::WIDTH) / 2;
-    int yOff = (GRID_ROWS - Symbols::HEIGHT) / 2;
+    // Pictures are 11 rows high: on 10-row clocks the bottom row is left out.
+    int yOff = max(0, (GRID_ROWS - Symbols::HEIGHT) / 2);
     CRGB color;
 
     for (uint8_t y = 0; y < Symbols::HEIGHT; y++) {
@@ -223,7 +227,8 @@ static void render(uint32_t now) {
       }
     }
   } else if (content == CONTENT_TEXT) {
-    int yOff = (GRID_ROWS - Font::HEIGHT) / 2;
+    // Center the capitals (7 rows); the descender row hangs below them.
+    int yOff = (GRID_ROWS - 7) / 2;
 
     for (int x = 0; x < GRID_COLS; x++) {
       int index = (int) textOffset + x - GRID_COLS;
@@ -247,11 +252,16 @@ static void render(uint32_t now) {
   // FastLED assumes ~42 mA per white LED, this project 60 mA, hence 70 %.
   int budget = Config::power_supply - CONSUMPTION_D1_MINI;
   FastLED.setMaxPowerInVoltsAndMilliamps(5, max(100, budget * 7 / 10));
-  FastLED.setBrightness(Config::brightness * 255);
+  double brightness = nightDim ? min(Config::dnd_brightness, Config::brightness) : Config::brightness;
+  FastLED.setBrightness(max(1, (int) (brightness * 255 + 0.5)));
   FastLED.show();
 }
 
 CRGB Display::effectColor(int x, int y, uint32_t ms) {
+  if (nightDim && Config::dnd_mode == DND_MODE_DIM_COLOR) {
+    return CRGB(Config::dnd_color.r, Config::dnd_color.g, Config::dnd_color.b);
+  }
+
   CRGB fg(Config::color_fg.r, Config::color_fg.g, Config::color_fg.b);
   CRGB fg2(Config::color_fg2.r, Config::color_fg2.g, Config::color_fg2.b);
 
@@ -316,7 +326,7 @@ void Display::loop() {
   scheduleOccasions(now);
 
   // Night mode started during an occasion: stop showing it.
-  if (sequenceActive && !sequenceIsPreview && timeDark && !manualText) {
+  if (sequenceActive && !sequenceIsPreview && (timeDark || nightDim) && !manualText) {
     endSequence();
   }
 
@@ -328,7 +338,8 @@ void Display::loop() {
     advanceText(now);
   }
 
-  bool animated = (content != CONTENT_TIME) || (!timeDark && Config::color_mode != COLOR_MODE_STATIC);
+  bool nightColor = nightDim && Config::dnd_mode == DND_MODE_DIM_COLOR;
+  bool animated = (content != CONTENT_TIME) || (!timeDark && !nightColor && Config::color_mode != COLOR_MODE_STATIC);
 
   // Static content is resent every second as well: a transmission error
   // (typically on the first LED of the chain) would otherwise stay visible
@@ -358,6 +369,7 @@ void Display::mark(int led) {
 
 void Display::timeChanged(bool dark) {
   timeDark = dark;
+  nightDim = !dark && DND::dimmed(Time::hour, Time::minute);
   dirty = true;
 }
 

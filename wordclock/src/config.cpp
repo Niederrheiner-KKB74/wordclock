@@ -31,6 +31,11 @@ void Config::save() {
   doc["dnd_start_minute"] = Config::dnd_start.minute;
   doc["dnd_end_hour"] = Config::dnd_end.hour;
   doc["dnd_end_minute"] = Config::dnd_end.minute;
+  doc["dnd_mode"] = Config::dnd_mode;
+  doc["dnd_brightness"] = Config::dnd_brightness;
+  doc["dnd_color_r"] = Config::dnd_color.r;
+  doc["dnd_color_g"] = Config::dnd_color.g;
+  doc["dnd_color_b"] = Config::dnd_color.b;
   doc["ntp"] = Config::ntp;
   doc["healthcheck"] = Config::healthcheck;
   doc["color_mode"] = Config::color_mode;
@@ -75,6 +80,11 @@ void Config::load() {
   Config::dnd_start.minute = -1;
   Config::dnd_end.hour = -1;
   Config::dnd_end.minute = -1;
+  Config::dnd_mode = DND_MODE_OFF;
+  Config::dnd_brightness = 0.05;
+  Config::dnd_color.r = 255;
+  Config::dnd_color.g = 60;
+  Config::dnd_color.b = 0;
   Config::ntp = "pool.ntp.org";
 
   Config::healthcheck = false;
@@ -137,6 +147,15 @@ void Config::load() {
   Config::dnd_end.hour = doc["dnd_end_hour"].as<int>();
   Config::dnd_end.minute = doc["dnd_end_minute"].as<int>();
 
+  // Added in 4.3.0 - older configs switch the clock off at night as before.
+  if (doc.containsKey("dnd_mode")) {
+    Config::dnd_mode = constrain(doc["dnd_mode"].as<int>(), 0, DND_MODE_COUNT - 1);
+    Config::dnd_brightness = constrain(doc["dnd_brightness"].as<double>(), 0.01, 1.0);
+    Config::dnd_color.r = doc["dnd_color_r"].as<int>();
+    Config::dnd_color.g = doc["dnd_color_g"].as<int>();
+    Config::dnd_color.b = doc["dnd_color_b"].as<int>();
+  }
+
   if(doc["ntp"]) {
     Config::ntp = doc["ntp"].as<String>();
   }
@@ -182,6 +201,9 @@ String Config::tz{};
 bool Config::dnd_active{};
 clock_time_t Config::dnd_start{};
 clock_time_t Config::dnd_end{};
+int Config::dnd_mode{};
+double Config::dnd_brightness{};
+color_t Config::dnd_color{};
 String Config::ntp{};
 bool Config::healthcheck{};
 int Config::color_mode{};

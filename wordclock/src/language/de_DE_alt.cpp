@@ -12,7 +12,7 @@ void Grid_de_DE_alt::setTime(int hour, int minute) {
 	return;
   }
 
-  if(DND::active(hour, minute)) {
+  if(DND::dark(hour, minute)) {
 	for(int i = 0; i < NUM_LEDS; i++) {
 	  Display::unmark(i);
 	}

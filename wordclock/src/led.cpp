@@ -29,6 +29,9 @@ int Led::getLedId(int id) {
 void Led::setup() {
   FastLED.addLeds<NEOPIXEL, DATA_PIN>(Led::ids, NUM_LEDS);
   FastLED.setBrightness(50);
+  // Temporal dithering needs many frames per second. Static content is only
+  // sent once per second, so dithering would make dim LEDs blink.
+  FastLED.setDither(DISABLE_DITHER);
 
   for(int i = 0; i < NUM_LEDS; i++) {
     Led::ids[i].setRGB(0, 0, 0);

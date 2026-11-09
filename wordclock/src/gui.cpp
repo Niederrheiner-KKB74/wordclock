@@ -187,11 +187,13 @@ String Gui::createScript() {
   content += "e('fg2_row').style.display=(m>=3)?'block':'none';";
   content += "e('speed_row').style.display=(m==0||m==3)?'none':'block';};";
   content += "mode.onchange=upd;upd();";
+  content += "var dm=e('dnd_mode'),updDnd=function(){var m=+dm.value;e('dnd_b_row').style.display=m?'block':'none';e('dnd_c_row').style.display=(m==2)?'block':'none';};";
+  content += "dm.onchange=updDnd;updDnd();";
   content += "save.onclick=function(){var d={};";
   content += "if(current=='color'){d.fg=e('fg').value;d.bg=e('bg').value;d.power_supply=e('power_supply').value;d.brightness=e('brightness').value;d.healthcheck=e('healthcheck').value;";
   content += "d.color_mode=mode.value;d.fg2=e('fg2').value;d.effect_speed=e('effect_speed').value;}";
   content += "else if(current=='time'){d.tz=tz.value;d.ntp=e('ntp').value;}";
-  content += "else if(current=='dnd'){d.dnd_active=e('dnd_active').value;d.dnd_start_hour=e('dnd_s_h').value;d.dnd_start_minute=e('dnd_s_m').value;d.dnd_end_hour=e('dnd_e_h').value;d.dnd_end_minute=e('dnd_e_m').value;}";
+  content += "else if(current=='dnd'){d.dnd_active=e('dnd_active').value;d.dnd_start_hour=e('dnd_s_h').value;d.dnd_start_minute=e('dnd_s_m').value;d.dnd_end_hour=e('dnd_e_h').value;d.dnd_end_minute=e('dnd_e_m').value;d.dnd_mode=e('dnd_mode').value;d.dnd_brightness=e('dnd_brightness').value/100;d.dnd_color=e('dnd_color').value;}";
   content += "else if(current=='occasions'){d.xmas=e('xmas').value;d.interval=e('interval').value;d.occasions=[];";
   content += "for(var i=0;i<" + String(MAX_OCCASIONS) + ";i++){d.occasions.push({day:e('o'+i+'_d').value,month:e('o'+i+'_m').value,symbol:e('o'+i+'_s').value,text:e('o'+i+'_t').value});}}";
   content += "else return;";
@@ -278,6 +280,21 @@ String Gui::createContent() {
   content += Gui::htmlOption("Inaktiv", String(0), String(Config::dnd_active));
   content += Gui::htmlOption("Aktiv", String(1), String(Config::dnd_active));
   content += "</select></div>";
+  content += "<div><label>In der Nacht</label><select id=\"dnd_mode\">";
+  content += Gui::htmlOption("Uhr ausschalten", "0", String(Config::dnd_mode));
+  content += Gui::htmlOption("Uhr dimmen (Farben wie tagsüber)", "1", String(Config::dnd_mode));
+  content += Gui::htmlOption("Uhr dimmen mit Nachtfarbe", "2", String(Config::dnd_mode));
+  content += "</select></div>";
+  content += "<div id=\"dnd_b_row\"><label>Helligkeit in der Nacht (höchstens so hell wie tagsüber)</label><select id=\"dnd_brightness\">";
+  {
+    const int levels[] = {1, 2, 3, 5, 8, 10, 15, 20, 30};
+    int stored = (int) (Config::dnd_brightness * 100 + 0.5);
+    for (int i = 0; i < 9; i++) {
+      content += Gui::htmlOption(String(levels[i]) + "&percnt;", String(levels[i]), String(stored));
+    }
+  }
+  content += "</select></div>";
+  content += "<div id=\"dnd_c_row\"><label>Nachtfarbe (warme Töne wie Rot oder Orange blenden am wenigsten)</label><input id=\"dnd_color\" type=\"color\" value=\"#" + Color::rgbToHex(Config::dnd_color) + "\"></div>";
   content += "<div><label>Start</label><div class=\"time\">";
   content += "<select id=\"dnd_s_h\">";
 
