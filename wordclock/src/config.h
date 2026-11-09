@@ -121,7 +121,7 @@
 /* Maximum length of scrolling texts in bytes (umlauts count twice) */
 #define TEXT_MAX_LENGTH 100
 
-#define FIRMWARE_VERSION "4.2.2"
+#define FIRMWARE_VERSION "4.2.3"
 
 /***********************************************
  * CONFIG END

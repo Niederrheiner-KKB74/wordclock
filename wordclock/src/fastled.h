@@ -10,16 +10,20 @@
 
 /* Interrupts during the LED transfer
  *
- * 0: no interrupts while the LEDs are updated (default). Prevents wrong
- *    colors / flickering, mostly on the first LED of the chain, caused by
- *    WiFi interrupts disturbing the timing.
- * 1: allow interrupts (FastLED default on the ESP8266). Use this if the web
- *    interface or WiFi becomes unreliable.
+ * Not set: FastLED's default for the ESP8266 (interrupts allowed between
+ * LEDs). Can be set in user_config.h:
+ * 0: no interrupts while the LEDs are updated
+ * 1: allow interrupts
  */
-#ifndef FASTLED_ALLOW_INTERRUPTS
-  #define FASTLED_ALLOW_INTERRUPTS 0
-#endif
 
 #include <FastLED.h>
+
+/* FastLED versions before 3.5.0 make the first LED of the chain flicker in
+ * random colors with the ESP8266 Arduino core 3.x (the timing of the first
+ * bit is disturbed). 3.5.0 aborts and repeats such a transfer.
+ */
+#if FASTLED_VERSION < 3005000
+  #error "FastLED 3.5.0 oder neuer noetig: Sketch > Bibliothek einbinden > Bibliotheken verwalten > FastLED aktualisieren. (FastLED 3.5.0 or newer required, older versions make the first LED flicker.)"
+#endif
 
 #endif

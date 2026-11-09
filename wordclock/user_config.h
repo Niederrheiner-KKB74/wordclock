@@ -57,7 +57,7 @@
  */
 // #define OTA_PASSWORD "my-secret-password"
 
-/* Allow interrupts while the LEDs are updated (0 = no, default; 1 = yes)
- * Set to 1 only if the web interface or WiFi becomes unreliable.
+/* Interrupts while the LEDs are updated (0 = no, 1 = yes)
+ * Not set: FastLED default. Only change this if LEDs flicker or WiFi is unreliable.
  */
-// #define FASTLED_ALLOW_INTERRUPTS 1
+// #define FASTLED_ALLOW_INTERRUPTS 0

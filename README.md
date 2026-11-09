@@ -1,5 +1,5 @@
 # WordClock
-[![Version](https://img.shields.io/badge/version-4.2.2-green.svg?style=for-the-badge)](#) [![mantained](https://img.shields.io/maintenance/yes/2020.svg?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-4.2.3-green.svg?style=for-the-badge)](#) [![mantained](https://img.shields.io/maintenance/yes/2020.svg?style=for-the-badge)](#)
 
 [![maintainer](https://img.shields.io/badge/maintainer-Goran%20Zunic%20%40panbachi-blue.svg?style=for-the-badge)](https://www.panbachi.de)
 
@@ -8,11 +8,11 @@
 # Requirements
 
 ## Healthcheck
-* [FastLED](https://github.com/FastLED/FastLED)
+* [FastLED](https://github.com/FastLED/FastLED) 3.5.0 or newer (older versions make the first LED flicker with the ESP8266 core 3.x)
 
 ## WordClock
 * [ESP8266 Arduino Core](https://github.com/esp8266/Arduino) 3.x
-* [FastLED](https://github.com/FastLED/FastLED)
+* [FastLED](https://github.com/FastLED/FastLED) 3.5.0 or newer (older versions make the first LED flicker with the ESP8266 core 3.x)
 * [WifiManager](https://github.com/tzapu/WiFiManager)
 * [ArduinoJson](https://github.com/bblanchon/ArduinoJson) 6.x
 
