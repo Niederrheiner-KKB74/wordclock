@@ -16,6 +16,7 @@
 #include "src/config.h"
 #include "src/dnd.h"
 #include "src/led.h"
+#include "src/display.h"
 #include "src/timeSync.h"
 #include "src/ota.h"
 #include "src/httpServer.h"
@@ -41,6 +42,7 @@ void setup() {
   HttpServer::setup();
   Ota::setup();
   Led::setup();
+  Display::setup();
   Time::setup();
 
   Grid::setTime(Time::hour, Time::minute);
@@ -49,10 +51,13 @@ void setup() {
     // run simple LED check at start (uncomment to deactivate)
     Healthcheck::run();
   }
+
+  Display::invalidate();
 }
 
 void loop() {
   Time::loop();
   HttpServer::loop();
   Ota::loop();
+  Display::loop();
 }

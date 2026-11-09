@@ -13,9 +13,13 @@ class Gui {
   static String createScript();
   static String createContent();
   static String createFooter();
+  static String render();
+  static void emit(String& content);
+  static bool streaming;
 
   public:
     static String index();
+    static void sendIndex();
     static String firmware();
 };
 #endif

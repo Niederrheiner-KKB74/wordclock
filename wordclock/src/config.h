@@ -113,11 +113,35 @@
   #define CONSUMPTION_PER_LED 60 // 60mA per LED on full brightness in white.
 #endif
 
-#define FIRMWARE_VERSION "4.1.0"
+/* Number of special occasions (birthdays etc.) that can be set in the web interface */
+#ifndef MAX_OCCASIONS
+  #define MAX_OCCASIONS 6
+#endif
+
+/* Maximum length of scrolling texts in bytes (umlauts count twice) */
+#define TEXT_MAX_LENGTH 100
+
+#define FIRMWARE_VERSION "4.2.0"
 
 /***********************************************
  * CONFIG END
  **********************************************/
+
+enum ColorMode {
+  COLOR_MODE_STATIC = 0,    // one color (foreground color)
+  COLOR_MODE_CYCLE = 1,     // whole clock slowly cycles through the spectrum
+  COLOR_MODE_RAINBOW = 2,   // rainbow running diagonally over the letters
+  COLOR_MODE_GRADIENT = 3,  // gradient from foreground color (top) to second color (bottom)
+  COLOR_MODE_WAVE = 4,      // waves of foreground and second color moving over the letters
+  COLOR_MODE_COUNT = 5
+};
+
+typedef struct {
+  uint8_t day;     // 1-31, 0 = entry not used
+  uint8_t month;   // 1-12
+  uint8_t symbol;  // see SymbolId in symbols.h
+  String text;     // optional scrolling text
+} occasion_t;
 
 class Config {
   public:
@@ -131,6 +155,16 @@ class Config {
     static clock_time_t dnd_end;
     static String ntp;
     static bool healthcheck;
+
+    static int color_mode;
+    static color_t color_fg2;
+    static int effect_speed;       // 1 (slow) - 10 (fast)
+
+    static int text_speed;         // 1 (slow) - 3 (fast)
+
+    static bool xmas;              // Christmas tree from 1st Advent to 26.12.
+    static int occasion_interval;  // seconds of time display between pictures
+    static occasion_t occasions[MAX_OCCASIONS];
 
     static void save();
     static void load();

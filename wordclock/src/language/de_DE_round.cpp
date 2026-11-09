@@ -5,6 +5,7 @@
 #include "../config.h"
 #include "../dnd.h"
 #include "../led.h"
+#include "../display.h"
 
 void Grid_de_DE_round::setTime(int hour, int minute) {
   if(hour == -1 || minute == -1) {
@@ -13,10 +14,10 @@ void Grid_de_DE_round::setTime(int hour, int minute) {
 
   if(DND::active(hour, minute)) {
 	for(int i = 0; i < NUM_LEDS; i++) {
-	  Led::ids[i].setRGB(0, 0, 0);
+	  Display::unmark(i);
 	}
 
-	FastLED.show();
+	Display::timeChanged(true);
 
 	return;
   }
@@ -46,16 +47,16 @@ void Grid_de_DE_round::setTime(int hour, int minute) {
   hour = hour % 12;
 
   for(int i = 0; i < NUM_LEDS; i++) {
-	Led::ids[i].setRGB(Config::color_bg.r * 0.2, Config::color_bg.g * 0.2, Config::color_bg.b * 0.2);
+	Display::unmark(i);
   }
 
   for(int i = 0; i < 5; i++) {
-	Led::ids[Led::getLedId(Grid_de_DE_round::time_it_is[i])].setRGB(Config::color_fg.r, Config::color_fg.g, Config::color_fg.b);
+	Display::mark(Led::getLedId(Grid_de_DE_round::time_it_is[i]));
   }
 
   for(int m = 0; m < 12; m++) {
 	if(Grid_de_DE_round::time_minutes[minute][m] >= 0) {
-	  Led::ids[Led::getLedId(Grid_de_DE_round::time_minutes[minute][m])].setRGB(Config::color_fg.r, Config::color_fg.g, Config::color_fg.b);
+	  Display::mark(Led::getLedId(Grid_de_DE_round::time_minutes[minute][m]));
 	}
   }
 
@@ -65,7 +66,7 @@ void Grid_de_DE_round::setTime(int hour, int minute) {
 
   for(int h = 0; h < hourLimit; h++) {
     if(Grid_de_DE_round::time_hours[hour][h] >= 0) {
-      Led::ids[Led::getLedId(Grid_de_DE_round::time_hours[hour][h])].setRGB(Config::color_fg.r, Config::color_fg.g, Config::color_fg.b);
+      Display::mark(Led::getLedId(Grid_de_DE_round::time_hours[hour][h]));
     }
   }
 
@@ -81,27 +82,26 @@ void Grid_de_DE_round::setTime(int hour, int minute) {
   switch(minuteDifference)
   { 
     case -2:
-      Led::ids[singleMinutesFirstLED].setRGB(Config::color_fg.r, Config::color_fg.g, Config::color_fg.b);
-      Led::ids[singleMinutesFirstLED + 1].setRGB(Config::color_fg.r, Config::color_fg.g, Config::color_fg.b);
+      Display::mark(singleMinutesFirstLED);
+      Display::mark(singleMinutesFirstLED + 1);
       break;
     case -1:
-      Led::ids[singleMinutesFirstLED + 1].setRGB(Config::color_fg.r, Config::color_fg.g, Config::color_fg.b);
+      Display::mark(singleMinutesFirstLED + 1);
       break;
     case 0:
-      Led::ids[singleMinutesFirstLED + 2].setRGB(Config::color_fg.r, Config::color_fg.g, Config::color_fg.b);
+      Display::mark(singleMinutesFirstLED + 2);
       break;
     case 1:
-      Led::ids[singleMinutesFirstLED + 3].setRGB(Config::color_fg.r, Config::color_fg.g, Config::color_fg.b);
+      Display::mark(singleMinutesFirstLED + 3);
       break;
     case +2:
-      Led::ids[singleMinutesFirstLED + 3].setRGB(Config::color_fg.r, Config::color_fg.g, Config::color_fg.b);
-      Led::ids[singleMinutesFirstLED + 4].setRGB(Config::color_fg.r, Config::color_fg.g, Config::color_fg.b);
+      Display::mark(singleMinutesFirstLED + 3);
+      Display::mark(singleMinutesFirstLED + 4);
       break;
     default:
       break;
   }
-  FastLED.setBrightness(Config::brightness * 255);
-  FastLED.show();
+  Display::timeChanged(false);
 }
 
 int Grid_de_DE_round::time_it_is[5] = {0, 1, 3, 4, 5}; // es ist

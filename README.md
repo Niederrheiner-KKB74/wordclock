@@ -1,5 +1,5 @@
 # WordClock
-[![Version](https://img.shields.io/badge/version-4.1.0-green.svg?style=for-the-badge)](#) [![mantained](https://img.shields.io/maintenance/yes/2020.svg?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-4.2.0-green.svg?style=for-the-badge)](#) [![mantained](https://img.shields.io/maintenance/yes/2020.svg?style=for-the-badge)](#)
 
 [![maintainer](https://img.shields.io/badge/maintainer-Goran%20Zunic%20%40panbachi-blue.svg?style=for-the-badge)](https://www.panbachi.de)
 
@@ -47,7 +47,33 @@ Check in your router what IP-adress your WordClock got. Open a webbrowser and go
 # Functions
 
 ## Set color
-You can set a foreground and background color on your clock.
+Choose a color mode, the foreground and background color and the brightness.
+
+| Color mode  | Effect |
+|-------------|--------|
+| Einfarbig   | all words in the foreground color |
+| Farbwechsel | the whole clock slowly cycles through the color spectrum |
+| Regenbogen  | a rainbow moves diagonally over the letters |
+| Farbverlauf | gradient from the foreground color (top) to the second color (bottom) |
+| Farbwelle   | waves of the foreground and second color move over the letters |
+
+The speed (1-10) sets how long one color cycle takes: from 10 minutes (1) to 6 seconds (10). The scrolling text uses the same color mode.
+
+## Special occasions
+On up to six dates per year (birthdays, anniversaries, ...) the clock shows a picture (birthday cake, Christmas tree or heart) alternating with the time, followed by an optional scrolling text such as "Alles Gute, Anna!". The candles flicker, the balls on the tree twinkle and the heart beats.
+
+The Christmas tree is shown automatically from the 1st Advent to December 26th, with "Frohe Weihnachten" from December 24th (can be switched off). A birthday on the same day takes priority. Use *Vorschau* to see a picture right away. Occasions are not shown during the night mode (DND).
+
+## Scrolling text
+Enter a text, choose how often it repeats (or until *Stopp*) and the speed. Letters, digits, German umlauts, ß, € and ♥ are supported; up to 100 bytes.
+
+The text can also be sent by other systems, e.g. Home Assistant:
+
+```
+PUT http://[YOUR_WORDCLOCK_IP]/api/text      {"text": "Essen ist fertig!", "repeat": 2, "speed": 2}
+DELETE http://[YOUR_WORDCLOCK_IP]/api/text   (stops text and pictures)
+PUT http://[YOUR_WORDCLOCK_IP]/api/preview   {"symbol": 1, "text": "Alles Gute!"}   (1 = cake, 2 = tree, 3 = heart)
+```
 
 ## Set time zone
 Choose your time zone from the list or enter your own [POSIX TZ rule](https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv). The clock switches between daylight saving time and standard time by itself; no internet service besides the NTP server is needed. The time tab shows the clock's current time so you can check the setting.

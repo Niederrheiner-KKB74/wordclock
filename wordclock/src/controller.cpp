@@ -10,12 +10,12 @@
 #include "timeSync.h"
 #include "ota.h"
 #include "led.h"
+#include "display.h"
+#include "symbols.h"
 
 void Controller::index() {
-  String content = Gui::index();
-
   HttpServer::web.sendHeader("Location", "http://" + HttpServer::ip);
-  HttpServer::web.send(200, "text/html", content);
+  Gui::sendIndex();
 }
 
 void Controller::saveColor() {
@@ -32,7 +32,14 @@ void Controller::saveColor() {
 
   Config::healthcheck = doc["healthcheck"].as<int>() == 1;
 
+  if (doc.containsKey("color_mode")) {
+    Config::color_mode = constrain(doc["color_mode"].as<int>(), 0, COLOR_MODE_COUNT - 1);
+    Config::color_fg2 = Color::hexToRgb(doc["fg2"].as<String>());
+    Config::effect_speed = constrain(doc["effect_speed"].as<int>(), 1, 10);
+  }
+
   Config::save();
+  Display::invalidate();
   Grid::setTime(Time::hour, Time::minute);
 
   HttpServer::web.send(200, "text/html", "");
@@ -96,6 +103,128 @@ void Controller::saveDnd() {
 
   Config::save();
   Grid::setTime(Time::hour, Time::minute);
+
+  HttpServer::web.send(200, "text/html", "");
+}
+
+// Removes control characters and limits the length (in bytes, UTF-8).
+String Controller::cleanText(String text, unsigned int maxLength) {
+  String out = "";
+
+  for (unsigned int i = 0; i < text.length(); i++) {
+    char c = text.charAt(i);
+
+    if ((uint8_t) c >= 0x20 && c != 0x7f) {
+      out += c;
+    }
+  }
+
+  out.trim();
+
+  if (out.length() > maxLength) {
+    // Do not cut a multi-byte character in half.
+    unsigned int end = maxLength;
+    while (end > 0 && (((uint8_t) out.charAt(end)) & 0xc0) == 0x80) {
+      end--;
+    }
+    out = out.substring(0, end);
+  }
+
+  return out;
+}
+
+void Controller::saveOccasions() {
+  String json = HttpServer::web.arg("plain");
+
+  DynamicJsonDocument doc(4096);
+  if (deserializeJson(doc, json)) {
+    HttpServer::web.send(400, "text/plain", "Ungueltige Daten");
+    return;
+  }
+
+  Config::xmas = doc["xmas"].as<int>() == 1;
+  Config::occasion_interval = constrain(doc["interval"].as<int>(), 10, 3600);
+
+  JsonArray list = doc["occasions"];
+  for (int i = 0; i < MAX_OCCASIONS; i++) {
+    occasion_t& o = Config::occasions[i];
+
+    if (i < (int) list.size()) {
+      int day = list[i]["day"].as<int>();
+      int month = list[i]["month"].as<int>();
+      bool valid = day >= 1 && day <= 31 && month >= 1 && month <= 12;
+
+      o.day = valid ? day : 0;
+      o.month = valid ? month : 0;
+      o.symbol = constrain(list[i]["symbol"].as<int>(), 0, SYMBOL_COUNT - 1);
+      o.text = Controller::cleanText(String(list[i]["text"] | ""), TEXT_MAX_LENGTH);
+    } else {
+      o.day = 0;
+      o.month = 0;
+      o.symbol = SYMBOL_NONE;
+      o.text = "";
+    }
+  }
+
+  Config::save();
+
+  HttpServer::web.send(200, "text/html", "");
+}
+
+void Controller::showText() {
+  String json = HttpServer::web.arg("plain");
+
+  DynamicJsonDocument doc(1024);
+  if (deserializeJson(doc, json)) {
+    HttpServer::web.send(400, "text/plain", "Ungueltige Daten");
+    return;
+  }
+
+  String text = Controller::cleanText(String(doc["text"] | ""), TEXT_MAX_LENGTH);
+
+  if (doc.containsKey("speed")) {
+    int speed = constrain(doc["speed"].as<int>(), 1, 3);
+
+    if (speed != Config::text_speed) {
+      Config::text_speed = speed;
+      Config::save();
+    }
+  }
+
+  if (text.length() == 0) {
+    HttpServer::web.send(400, "text/plain", "Bitte einen Text eingeben");
+    return;
+  }
+
+  int repeat = doc.containsKey("repeat") ? constrain(doc["repeat"].as<int>(), 0, 99) : 1;
+  Display::showText(text, repeat);
+
+  HttpServer::web.send(200, "text/html", "");
+}
+
+void Controller::stopText() {
+  Display::stopText();
+  HttpServer::web.send(200, "text/html", "");
+}
+
+void Controller::preview() {
+  String json = HttpServer::web.arg("plain");
+
+  DynamicJsonDocument doc(1024);
+  if (deserializeJson(doc, json)) {
+    HttpServer::web.send(400, "text/plain", "Ungueltige Daten");
+    return;
+  }
+
+  uint8_t symbol = constrain(doc["symbol"].as<int>(), 0, SYMBOL_COUNT - 1);
+  String text = Controller::cleanText(String(doc["text"] | ""), TEXT_MAX_LENGTH);
+
+  if (symbol == SYMBOL_NONE && text.length() == 0) {
+    HttpServer::web.send(400, "text/plain", "Kein Bild und kein Text");
+    return;
+  }
+
+  Display::preview(symbol, text);
 
   HttpServer::web.send(200, "text/html", "");
 }

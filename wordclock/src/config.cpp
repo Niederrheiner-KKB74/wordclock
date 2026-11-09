@@ -16,7 +16,7 @@ void Config::save() {
 
   Serial.println("Save config.");
 
-  StaticJsonDocument<1024> doc;
+  DynamicJsonDocument doc(4096);
   doc["color_bg_r"] = Config::color_bg.r;
   doc["color_bg_g"] = Config::color_bg.g;
   doc["color_bg_b"] = Config::color_bg.b;
@@ -33,6 +33,23 @@ void Config::save() {
   doc["dnd_end_minute"] = Config::dnd_end.minute;
   doc["ntp"] = Config::ntp;
   doc["healthcheck"] = Config::healthcheck;
+  doc["color_mode"] = Config::color_mode;
+  doc["color_fg2_r"] = Config::color_fg2.r;
+  doc["color_fg2_g"] = Config::color_fg2.g;
+  doc["color_fg2_b"] = Config::color_fg2.b;
+  doc["effect_speed"] = Config::effect_speed;
+  doc["text_speed"] = Config::text_speed;
+  doc["xmas"] = Config::xmas;
+  doc["occasion_interval"] = Config::occasion_interval;
+
+  JsonArray occasions = doc.createNestedArray("occasions");
+  for (int i = 0; i < MAX_OCCASIONS; i++) {
+    JsonObject o = occasions.createNestedObject();
+    o["d"] = Config::occasions[i].day;
+    o["m"] = Config::occasions[i].month;
+    o["s"] = Config::occasions[i].symbol;
+    o["t"] = Config::occasions[i].text;
+  }
 
   serializeJson(doc, file);
 
@@ -62,6 +79,22 @@ void Config::load() {
 
   Config::healthcheck = false;
 
+  Config::color_mode = COLOR_MODE_STATIC;
+  Config::color_fg2.r = 0;
+  Config::color_fg2.g = 80;
+  Config::color_fg2.b = 255;
+  Config::effect_speed = 3;
+  Config::text_speed = 2;
+  Config::xmas = true;
+  Config::occasion_interval = 60;
+
+  for (int i = 0; i < MAX_OCCASIONS; i++) {
+    Config::occasions[i].day = 0;
+    Config::occasions[i].month = 0;
+    Config::occasions[i].symbol = 0;
+    Config::occasions[i].text = "";
+  }
+
   File file = SPIFFS.open("/wordclock_config.json", "r");
 
   if(!file) {
@@ -72,7 +105,7 @@ void Config::load() {
 
   Serial.println("Load config.");
 
-  StaticJsonDocument<1024> doc;
+  DynamicJsonDocument doc(4096);
   deserializeJson(doc, file);
 
   Config::color_bg.r = doc["color_bg_r"].as<int>();
@@ -112,6 +145,32 @@ void Config::load() {
     Config::healthcheck = doc["healthcheck"].as<bool>();
   }
 
+  // Settings added in 4.2.0 - older configs keep the defaults above.
+  if (doc.containsKey("color_mode")) {
+    Config::color_mode = constrain(doc["color_mode"].as<int>(), 0, COLOR_MODE_COUNT - 1);
+    Config::color_fg2.r = doc["color_fg2_r"].as<int>();
+    Config::color_fg2.g = doc["color_fg2_g"].as<int>();
+    Config::color_fg2.b = doc["color_fg2_b"].as<int>();
+    Config::effect_speed = constrain(doc["effect_speed"].as<int>(), 1, 10);
+  }
+
+  if (doc.containsKey("text_speed")) {
+    Config::text_speed = constrain(doc["text_speed"].as<int>(), 1, 3);
+  }
+
+  if (doc.containsKey("xmas")) {
+    Config::xmas = doc["xmas"].as<bool>();
+    Config::occasion_interval = constrain(doc["occasion_interval"].as<int>(), 10, 3600);
+  }
+
+  JsonArray occasions = doc["occasions"];
+  for (int i = 0; i < MAX_OCCASIONS && i < (int) occasions.size(); i++) {
+    Config::occasions[i].day = occasions[i]["d"].as<int>();
+    Config::occasions[i].month = occasions[i]["m"].as<int>();
+    Config::occasions[i].symbol = occasions[i]["s"].as<int>();
+    Config::occasions[i].text = String(occasions[i]["t"] | "");
+  }
+
   file.close();
 }
 
@@ -125,3 +184,10 @@ clock_time_t Config::dnd_start{};
 clock_time_t Config::dnd_end{};
 String Config::ntp{};
 bool Config::healthcheck{};
+int Config::color_mode{};
+color_t Config::color_fg2{};
+int Config::effect_speed{};
+int Config::text_speed{};
+bool Config::xmas{};
+int Config::occasion_interval{};
+occasion_t Config::occasions[MAX_OCCASIONS];

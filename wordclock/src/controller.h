@@ -11,12 +11,17 @@ class Controller {
     static void saveDnd();    
     static void deleteWiFi();
     static void firmware();
+    static void saveOccasions();
+    static void showText();
+    static void stopText();
+    static void preview();
     static void getLogoSvg();
     static void getManifest();
     static void notFound();
 
   private:
     static bool isValidSetting(const String& value);
+    static String cleanText(String text, unsigned int maxLength);
 };
 
 #endif
