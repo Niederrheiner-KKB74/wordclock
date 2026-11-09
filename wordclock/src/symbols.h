@@ -2,7 +2,7 @@
 #define WORDCLOCK_SYMBOLS_H
 
 #include <Arduino.h>
-#include <FastLED.h>
+#include "fastled.h"
 
 /*
  * Small pictures for special occasions, 11 x 10 pixels.

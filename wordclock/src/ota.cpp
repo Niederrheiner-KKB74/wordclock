@@ -2,7 +2,7 @@
 #include <ESP8266HTTPUpdateServer.h>
 #include <ArduinoOTA.h>
 #include <ESP8266mDNS.h>
-#include <FastLED.h>
+#include "fastled.h"
 
 #include "ota.h"
 #include "config.h"

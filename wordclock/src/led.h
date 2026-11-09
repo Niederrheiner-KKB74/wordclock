@@ -1,7 +1,7 @@
 #ifndef WORDCLOCK_LED_H
 #define WORDCLOCK_LED_H
 
-#include <FastLED.h>
+#include "fastled.h"
 
 #define NUM_LEDS ((GRID_ROWS * GRID_COLS) + EXTRA_LEDS)
 

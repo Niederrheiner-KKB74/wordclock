@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <FastLED.h>
+#include "fastled.h"
 
 #include "display.h"
 #include "config.h"
@@ -8,7 +8,9 @@
 #include "symbols.h"
 #include "occasions.h"
 
-static const uint16_t FRAME_MS = 30;            // about 33 frames per second for animations
+// About 20 frames per second for animations. Interrupts are off while the
+// LEDs are updated (~4 ms for 125 LEDs), so this leaves enough time for WiFi.
+static const uint16_t FRAME_MS = 50;
 static const uint16_t REFRESH_MS = 1000;        // resend static content every second
 static const uint32_t SYMBOL_MS = 7000;         // how long a picture is shown
 static const uint16_t TEXT_MAX_COLUMNS = 600;   // about 100 characters

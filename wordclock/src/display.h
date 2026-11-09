@@ -2,7 +2,7 @@
 #define WORDCLOCK_DISPLAY_H
 
 #include <Arduino.h>
-#include <FastLED.h>
+#include "fastled.h"
 
 /*
  * Draws everything on the LEDs, several times per second:

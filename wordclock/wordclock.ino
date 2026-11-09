@@ -3,7 +3,7 @@
 #include <DNSServer.h>
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>
-#include <FastLED.h>
+#include "src/fastled.h"
 #include <ESP8266HTTPUpdateServer.h>
 #include <ESP8266mDNS.h>
 #include <ArduinoOTA.h>

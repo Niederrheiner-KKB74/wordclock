@@ -56,3 +56,8 @@
  * Username for the web upload is "admin".
  */
 // #define OTA_PASSWORD "my-secret-password"
+
+/* Allow interrupts while the LEDs are updated (0 = no, default; 1 = yes)
+ * Set to 1 only if the web interface or WiFi becomes unreliable.
+ */
+// #define FASTLED_ALLOW_INTERRUPTS 1
